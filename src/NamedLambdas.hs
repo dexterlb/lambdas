@@ -52,7 +52,7 @@ applicationExprParser = P.union
 
 
 parser :: Parser Expression
-parser = expressionParser
+parser = expressionParser `P.left` P.end
 
 parse :: String -> Maybe Expression
 parse = P.parse parser

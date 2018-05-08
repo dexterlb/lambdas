@@ -46,10 +46,12 @@ unionl :: [Parser a] -> Parser a
 unionl = foldr1 union
 
 many :: Parser a -> Parser [a]
-many p = union (pmap pure p) (manyOrNone p)
+many p = con (:) p (manyOrNone p)
 
 manyOrNone :: Parser a -> Parser [a]
-manyOrNone p s = concat $ map (\(x, rest) -> rmap (x :) (manyOrNone p rest)) $ p s
+manyOrNone p s =
+    (concat $ map (\(x, rest) -> rmap (x :) (manyOrNone p rest)) $ p s)
+    ++ [([], s)]
 
 char :: Char -> Parser Char
 char c (x:xs)

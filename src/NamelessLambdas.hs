@@ -15,7 +15,7 @@ instance Show Expression where
 
 expressionParser :: Parser Expression
 expressionParser = P.spaces `P.right` P.unionl
-    [applicationExprParser, lambdaExprParser, varExprParser, bracedExprParser]
+    [lambdaExprParser, varExprParser, applicationExprParser, bracedExprParser]
 
 bracedExprParser :: Parser Expression
 bracedExprParser = (P.char '(' `P.right` expressionParser) `P.left` (P.char ')')
@@ -40,7 +40,7 @@ applicationExprParser = P.union
 
 
 parser :: Parser Expression
-parser = expressionParser
+parser = expressionParser `P.left` P.end
 
 parse :: String -> Maybe Expression
 parse = P.parse parser
