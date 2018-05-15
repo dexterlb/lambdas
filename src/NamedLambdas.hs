@@ -9,6 +9,7 @@ data Expression
     = Variable      Variable
     | Application   Expression  Expression
     | Lambda        Variable    Expression
+    deriving (Eq)
 
 instance Show Expression where
     show (Variable x)       = x

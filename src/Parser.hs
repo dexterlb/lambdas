@@ -18,13 +18,13 @@ pmap :: (a -> b) -> Parser a -> Parser b
 pmap f p s = (\(y, rest) -> (f y, rest)) <$> (p s)
 
 rmap :: (a -> b) -> ParseResult a -> ParseResult b
-rmap f = map (\(a, rest) -> (f a, rest))
+rmap = fmap . (\f (x, rest) -> (f x, rest))
 
 yield :: a -> Parser a
 yield x s = pure (x, s)
 
 end :: Parser Void
-end "" = [(void, "")]
+end "" = pure (void, "")
 end _  = []
 
 con :: (a -> b -> c) -> Parser a -> Parser b -> Parser c

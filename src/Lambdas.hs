@@ -8,7 +8,22 @@ import Control.Monad (liftM2)
 
 type Context = [NL.Variable]
 
--- substitute :: UL.Expression -> Int -> UL.Expression -> UL.Expression
+substitute :: UL.Expression -> Int -> UL.Expression -> UL.Expression
+substitute (UL.Variable x) y to
+    | x == y = to
+    | x /= y = (UL.Variable x)
+substitute (UL.Application m n) y to = UL.Application (substitute m y to) (substitute n y to)
+substitute (UL.Lambda m) y to = UL.Lambda (substitute m (y + 1) (up to 1))
+
+up :: UL.Expression -> Int -> UL.Expression
+up to n = up' to n 0
+
+up' :: UL.Expression -> Int -> Int -> UL.Expression
+up' (UL.Variable x) d c
+    | x >= c = (UL.Variable (x + d))
+    | otherwise = (UL.Variable x)
+up' (UL.Application m n) d c = UL.Application (up' m d c) (up' n d c)
+up' (UL.Lambda m) d c = UL.Lambda (up' m d (c + 1))
 
 unname :: Context -> NL.Expression -> Maybe UL.Expression
 unname c (NL.Variable x)      =        UL.Variable <$> index c x

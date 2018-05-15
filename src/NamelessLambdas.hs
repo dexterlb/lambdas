@@ -7,6 +7,7 @@ data Expression
     = Variable      Int
     | Application   Expression  Expression
     | Lambda        Expression
+    deriving (Eq)
 
 instance Show Expression where
     show (Variable x)       = show x
