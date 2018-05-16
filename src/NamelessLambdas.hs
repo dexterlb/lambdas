@@ -32,8 +32,8 @@ lambdaExprParser =
 
 applicationExprParser :: Parser Expression
 applicationExprParser = P.union
-    (P.con leftAssoc other applicationExprParser)
     (P.con Application other other)
+    (P.con leftAssoc other applicationExprParser)
 
     where
         other = P.spaces `P.right` (P.unionl [lambdaExprParser, varExprParser, bracedExprParser])
