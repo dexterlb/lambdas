@@ -2,6 +2,7 @@ module NamelessLambdas where
 
 import qualified Parser as P
 import Parser (Parser)
+import Data.Maybe (fromJust)
 
 data Expression
     = Variable      Int
@@ -45,3 +46,6 @@ parser = expressionParser `P.left` P.end
 
 parse :: String -> Maybe Expression
 parse = P.parse parser
+
+ul :: String -> Expression
+ul = fromJust . parse

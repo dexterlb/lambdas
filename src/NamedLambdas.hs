@@ -2,6 +2,7 @@ module NamedLambdas where
 
 import qualified Parser as P
 import Parser (Parser)
+import Data.Maybe (fromJust)
 
 type Variable = String
 
@@ -57,3 +58,6 @@ parser = expressionParser `P.left` P.end
 
 parse :: String -> Maybe Expression
 parse = P.parse parser
+
+nl :: String -> Expression
+nl = fromJust . parse
