@@ -8,6 +8,12 @@ import Control.Monad (liftM2)
 
 type Context = [NL.Variable]
 
+reduce :: UL.Expression -> UL.Expression
+reduce (UL.Application (UL.Lambda m) n) = substitute m 0 n
+reduce (UL.Application m n)             = UL.Application (reduce m) (reduce n)
+reduce (UL.Lambda m)                    = UL.Lambda      (reduce m)
+reduce (UL.Variable x)                  = UL.Variable    x
+
 substitute :: UL.Expression -> Int -> UL.Expression -> UL.Expression
 substitute (UL.Variable x) y to
     | x == y = to
