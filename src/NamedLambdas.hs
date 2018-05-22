@@ -22,6 +22,7 @@ varChars = "xyztuvwpqrklsmnijabcdefgho"
 allVars :: [Variable]
 allVars = (map pure) varChars ++ (map (('x' : ) . show) [1..])
 
+
 varParser :: Parser Variable
 varParser = P.spaces `P.right` P.union
     (P.con (\c n -> c : (show n)) (P.charOf varChars) P.number)
