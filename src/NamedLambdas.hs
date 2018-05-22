@@ -44,13 +44,10 @@ lambdaExprParser =
     (P.con Lambda varParser expressionParser)
 
 applicationExprParser :: Parser Expression
-applicationExprParser = P.union
-    (P.con Application other other)
-    (P.con leftAssoc other applicationExprParser)
-
+applicationExprParser = P.pmap leftAssoc $ P.many other
     where
         other = P.spaces `P.right` (P.unionl [lambdaExprParser, varExprParser, bracedExprParser])
-        leftAssoc p (Application m n) = Application (Application p m) n
+        leftAssoc = foldl1 Application
 
 
 parser :: Parser Expression

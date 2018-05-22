@@ -34,3 +34,7 @@ spec = do
       (name   [] (ul "lambda 0 (lambda 0 (lambda 2 0 1) 1)")
         `shouldBe`
         (Just $ nl "lambda x (x (lambda y (y (lambda z (xzy)) x)))"))
+
+  describe "substitute" $ do
+    it "can substitute in the example from the PDF" $ do
+      substitute (ul "0 (lambda 0 1 3) 2") 0 (ul "2 0") `shouldBe` (ul "2 0 (lambda 0 (3 1) 3) 2")

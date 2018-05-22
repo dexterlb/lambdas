@@ -35,3 +35,13 @@ spec = do
           (Application (Variable "x") (Variable "y"))
           (Variable "z")
         ))
+
+    it "parses application left-associatively twice" $ do
+      parse "x y z t" `shouldBe` (Just
+        (Application
+          (Application
+            (Application
+              (Variable "x") (Variable "y"))
+              (Variable "z"))
+              (Variable "t"))
+        )
