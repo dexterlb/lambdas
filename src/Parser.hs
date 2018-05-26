@@ -3,10 +3,6 @@ module Parser where
 import Data.Char (ord)
 import Data.Maybe (listToMaybe)
 
-type Void = ()
-void :: Void
-void = ()
-
 type ParseResult a = [(a, String)]
 
 type Parser a = String -> ParseResult a
@@ -23,30 +19,34 @@ rmap = fmap . (\f (x, rest) -> (f x, rest))
 yield :: a -> Parser a
 yield x s = pure (x, s)
 
-end :: Parser Void
-end "" = pure (void, "")
+end :: Parser ()
+end "" = pure ((), "")
 end _  = []
 
-con :: (a -> b -> c) -> Parser a -> Parser b -> Parser c
-con f pa pb s = do
+concatenate :: (a -> b -> c) -> Parser a -> Parser b -> Parser c
+concatenate f pa pb s = do
     (x, intermediate) <- pa s
     (y, rest)         <- pb intermediate
     return $ (f x y, rest)
 
+compose :: Parser a -> (a -> Parser b) -> Parser b
+compose pa f s = do
+    (x, intermediate) <- pa s
+    let pb = f x
+    (y, rest)         <- pb intermediate
+    return $ (y, rest)
+
 left :: Parser a -> Parser b -> Parser a
-left = con (\x _ -> x)
+left = concatenate (\x _ -> x)
 
 right :: Parser a -> Parser b -> Parser b
-right = con (\_ y -> y)
+right = concatenate (\_ y -> y)
 
 union :: Parser a -> Parser a -> Parser a
 union pa pb s = (pa s) ++ (pb s)
 
-unionl :: [Parser a] -> Parser a
-unionl = foldr1 union
-
 many :: Parser a -> Parser [a]
-many p = con (:) p (manyOrNone p)
+many p = concatenate (:) p (manyOrNone p)
 
 manyOrNone :: Parser a -> Parser [a]
 manyOrNone p s =
@@ -66,7 +66,7 @@ spaces :: Parser String
 spaces = union (many space) (yield "")
 
 string :: String -> Parser String
-string = (foldr (con (:)) (yield [])) . (map char)
+string = (foldr (concatenate (:)) (yield [])) . (map char)
 
 charOf :: String -> Parser Char
 charOf = (foldr1 union) . (map char)
