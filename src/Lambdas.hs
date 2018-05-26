@@ -2,14 +2,19 @@ module Lambdas where
 
 import qualified NamedLambdas as NL
 import qualified NamelessLambdas as UL
+import Maths
 
 import Data.List (elemIndex)
 import Control.Monad (liftM2)
+import Data.Maybe (fromJust)
 
 type Context = [NL.Variable]
 
+reduceUntil :: Int -> UL.Expression -> (UL.Expression, ProcessResult)
+reduceUntil = limitedFixedPoint reduce
+
 reduce :: UL.Expression -> UL.Expression
-reduce (UL.Application (UL.Lambda m) n) = substitute m 0 n
+reduce (UL.Application (UL.Lambda m) n) = up (substitute m 0 (up n 1)) (-1)
 reduce (UL.Application m n)             = UL.Application (reduce m) (reduce n)
 reduce (UL.Lambda m)                    = UL.Lambda      (reduce m)
 reduce (UL.Variable x)                  = UL.Variable    x
@@ -30,6 +35,14 @@ up' (UL.Variable x) d c
     | otherwise = (UL.Variable x)
 up' (UL.Application m n) d c = UL.Application (up' m d c) (up' n d c)
 up' (UL.Lambda m) d c = UL.Lambda (up' m d (c + 1))
+
+onNamed :: (UL.Expression -> UL.Expression) -> NL.Expression -> NL.Expression
+onNamed f m = fromJust $ do
+    let vars = NL.fvList m
+    m'       <- unname vars m
+    let n'   = f m'
+    n        <- name vars n'
+    return n
 
 unname :: Context -> NL.Expression -> Maybe UL.Expression
 unname c (NL.Variable x)      =        UL.Variable <$> index c x

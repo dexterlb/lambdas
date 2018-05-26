@@ -38,3 +38,14 @@ spec = do
   describe "substitute" $ do
     it "can substitute in the example from the PDF" $ do
       substitute (ul "0 (lambda 0 1 3) 2") 0 (ul "2 0") `shouldBe` (ul "2 0 (lambda 0 (3 1) 3) 2")
+
+  describe "reduce" $ do
+    it "acts like identity when the given term contains no redexes" $ do
+      reduce (ul "1 lambda 0") `shouldBe` (ul "1 lambda 0")
+    it "reduces a redex" $ do
+      reduce (ul "(lambda 0 1) 1") `shouldBe` (ul "1 0")
+    it "reduces a redex deep into the term" $ do
+      -- too lazy to think about unnamed terms
+      (onNamed reduce (nl "x (lambda x ((lambda x (y x)) z))"))
+      `shouldBe`
+      (nl "x (lambda t (y z))")

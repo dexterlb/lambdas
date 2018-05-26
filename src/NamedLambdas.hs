@@ -3,6 +3,8 @@ module NamedLambdas where
 import qualified Parser as P
 import Parser (Parser)
 import Data.Maybe (fromJust)
+import Data.Set (Set)
+import qualified Data.Set as Set
 
 type Variable = String
 
@@ -11,6 +13,23 @@ data Expression
     | Application   Expression  Expression
     | Lambda        Variable    Expression
     deriving (Eq)
+
+
+fvList :: Expression -> [Variable]
+fvList = (Set.elems . fv)
+
+fv :: Expression -> Set Variable
+fv (Variable x) = Set.singleton x
+fv (Application m n) = Set.union (fv m) (fv n)
+fv (Lambda x m) = Set.delete x (fv m)
+
+bvList :: Expression -> [Variable]
+bvList = (Set.elems . bv)
+
+bv :: Expression -> Set Variable
+bv (Variable x) = Set.empty
+bv (Application m n) = Set.union (bv m) (bv n)
+bv (Lambda x m) = Set.insert x (bv m)
 
 instance Show Expression where
     show (Variable x)       = x

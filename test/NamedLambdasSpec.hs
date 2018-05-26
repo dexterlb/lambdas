@@ -2,6 +2,7 @@ module NamedLambdasSpec (main, spec) where
 
 import Test.Hspec
 import NamedLambdas
+import qualified Data.Set as Set
 
 main :: IO ()
 main = hspec spec
@@ -45,3 +46,10 @@ spec = do
               (Variable "z"))
               (Variable "t"))
         )
+  describe "fv" $ do
+    it "yields correct free variables for an example term" $ do
+      fv (nl "(lambda z ((lambda x y) z)) z") `shouldBe` Set.fromList ["y", "z"]
+
+  describe "bv" $ do
+    it "yields correct bound variables for an example term" $ do
+      bv (nl "(lambda z ((lambda x y) z)) z") `shouldBe` Set.fromList ["x", "z"]
