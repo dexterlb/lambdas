@@ -16,29 +16,29 @@ instance Show Expression where
     show (Lambda m)         = "λ" ++ "" ++ (show m)
 
 expressionParser :: Parser Expression
-expressionParser = P.spaces `P.right` P.unionl
+expressionParser = P.spaces *> P.unionl
     [lambdaExprParser, varExprParser, applicationExprParser, bracedExprParser]
 
 bracedExprParser :: Parser Expression
-bracedExprParser = (P.char '(' `P.right` expressionParser) `P.left` (P.char ')')
+bracedExprParser = (P.char '(' *> expressionParser) <* (P.char ')')
 
 varExprParser :: Parser Expression
-varExprParser = P.pmap Variable P.number
+varExprParser = fmap Variable P.number
 
 lambdaExprParser :: Parser Expression
 lambdaExprParser =
     (P.unionl [P.string "lambda", P.string "\\", P.string "λ"])
-    `P.right`
-    (P.pmap Lambda expressionParser)
+    *>
+    (fmap Lambda expressionParser)
 
 applicationExprParser :: Parser Expression
-applicationExprParser = P.pmap leftAssoc $ P.many other
+applicationExprParser = fmap leftAssoc $ P.many other
     where
-        other = P.spaces `P.right` (P.unionl [lambdaExprParser, varExprParser, bracedExprParser])
+        other = P.spaces *> (P.unionl [lambdaExprParser, varExprParser, bracedExprParser])
         leftAssoc = foldl1 Application
 
 parser :: Parser Expression
-parser = expressionParser `P.left` P.end
+parser = expressionParser <* P.end
 
 parse :: String -> Maybe Expression
 parse = P.parse parser
