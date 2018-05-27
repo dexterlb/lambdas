@@ -5,6 +5,8 @@ import Control.Applicative (liftA2)
 
 data Parser a = Parser (P.Parser a)     -- typeception
 
+-- instances on type aliases would have made life a whole lot easier
+
 instance Monad Parser where
     return x                = Parser (P.yield x)
     Parser p >> Parser q    = Parser $ p `P.right` q
@@ -47,7 +49,9 @@ many p = do
     return $ x:xs
 
 manyOrNone :: Parser a -> Parser [a]
-manyOrNone = lift P.manyOrNone
+manyOrNone p = union
+    (concatenate (:) p (manyOrNone p))
+    (pure [])
 
 space :: Parser Char
 space = charOf " \n\r\t"
@@ -71,6 +75,8 @@ number = digitsToNumber <$> many digit
 
 digit :: Parser Int
 digit = Parser P.digit
+
+-- functions for bridging between Parser and ProtoParser:
 
 lift :: (P.Parser a -> P.Parser b) -> Parser a -> Parser b
 lift f p = Parser (f (extract p))

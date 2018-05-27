@@ -13,12 +13,6 @@ parse p s = fst <$> (listToMaybe $ p s)
 allResults :: Parser a -> String -> [(a, String)]
 allResults p s = p s
 
-pmap :: (a -> b) -> Parser a -> Parser b
-pmap f p s = (\(y, rest) -> (f y, rest)) <$> (p s)
-
-rmap :: (a -> b) -> ParseResult a -> ParseResult b
-rmap = fmap . (\f (x, rest) -> (f x, rest))
-
 yield :: a -> Parser a
 yield x s = pure (x, s)
 
@@ -41,14 +35,6 @@ right pa pb s = do
 
 union :: Parser a -> Parser a -> Parser a
 union pa pb s = (pa s) ++ (pb s)
-
-unionl :: [Parser a] -> Parser a
-unionl = foldr1 union
-
-manyOrNone :: Parser a -> Parser [a]
-manyOrNone p s =
-    (concat $ map (\(x, rest) -> rmap (x :) (manyOrNone p rest)) $ p s)
-    ++ [([], s)]
 
 char :: Char -> Parser Char
 char c (x:xs)
