@@ -6,16 +6,21 @@ import Control.Applicative (liftA2)
 data Parser a = Parser (P.Parser a)     -- typeception
 
 instance Monad Parser where
-    return              = pure
-    (>>)                = right
-    (>>=) (Parser p) f  = Parser $ P.compose p (dropF f)
+    return x                = Parser (P.yield x)
+    Parser p >> Parser q    = Parser $ p `P.right` q
+    Parser p >>= f          = Parser $ P.compose p (dropF f)
 
 instance Applicative Parser where
-    liftA2              = concatenate
-    pure                = yield
+    pf <*> p = do
+        f <- pf
+        x <- p
+        return $ f x
+    pure = return
 
 instance Functor Parser where
-    fmap                = pmap
+    fmap f p = do
+        x <- p
+        return $ f x
 
 parse :: Parser a -> String -> Maybe a
 parse (Parser p) s = P.parse p s
@@ -26,20 +31,8 @@ allResults (Parser p) s = P.allResults p s
 end :: Parser ()
 end = Parser P.end
 
-left :: Parser a -> Parser b -> Parser a
-left = concatenate (\x _ -> x)
-
-right :: Parser a -> Parser b -> Parser b
-right = concatenate (\_ y -> y)
-
-pmap :: (a -> b) -> Parser a -> Parser b
-pmap f = lift (P.pmap f)
-
-yield :: a -> Parser a
-yield = Parser . P.yield
-
 concatenate :: (a -> b -> c) -> Parser a -> Parser b -> Parser c
-concatenate f = lift2 (P.concatenate f)
+concatenate = liftA2
 
 union :: Parser a -> Parser a -> Parser a
 union = lift2 P.union
@@ -48,7 +41,10 @@ unionl :: [Parser a] -> Parser a
 unionl = foldr1 union
 
 many :: Parser a -> Parser [a]
-many = lift P.many
+many p = do
+    x   <- p
+    xs  <- manyOrNone p
+    return $ x:xs
 
 manyOrNone :: Parser a -> Parser [a]
 manyOrNone = lift P.manyOrNone
@@ -69,7 +65,9 @@ char :: Char -> Parser Char
 char c = Parser (P.char c)
 
 number :: Parser Int
-number = Parser $ P.number
+number = digitsToNumber <$> many digit
+    where
+        digitsToNumber = foldl1 (\n d -> n * 10 + d)
 
 digit :: Parser Int
 digit = Parser P.digit

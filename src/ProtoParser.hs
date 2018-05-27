@@ -26,12 +26,6 @@ end :: Parser ()
 end "" = pure ((), "")
 end _  = []
 
-concatenate :: (a -> b -> c) -> Parser a -> Parser b -> Parser c
-concatenate f pa pb s = do
-    (x, intermediate) <- pa s
-    (y, rest)         <- pb intermediate
-    return $ (f x y, rest)
-
 compose :: Parser a -> (a -> Parser b) -> Parser b
 compose pa f s = do
     (x, intermediate) <- pa s
@@ -39,20 +33,17 @@ compose pa f s = do
     (y, rest)         <- pb intermediate
     return $ (y, rest)
 
-left :: Parser a -> Parser b -> Parser a
-left = concatenate (\x _ -> x)
-
 right :: Parser a -> Parser b -> Parser b
-right = concatenate (\_ y -> y)
+right pa pb s = do
+    (_, intermediate) <- pa s
+    (y, rest)         <- pb intermediate
+    return $ (y, rest)
 
 union :: Parser a -> Parser a -> Parser a
 union pa pb s = (pa s) ++ (pb s)
 
 unionl :: [Parser a] -> Parser a
 unionl = foldr1 union
-
-many :: Parser a -> Parser [a]
-many p = concatenate (:) p (manyOrNone p)
 
 manyOrNone :: Parser a -> Parser [a]
 manyOrNone p s =
@@ -64,23 +55,6 @@ char c (x:xs)
     | c == x    = [(c, xs)]
     | otherwise = []
 char _ [] = []
-
-space :: Parser Char
-space = charOf " \n\r\t"
-
-spaces :: Parser String
-spaces = union (many space) (yield "")
-
-string :: String -> Parser String
-string = (foldr (concatenate (:)) (yield [])) . (map char)
-
-charOf :: String -> Parser Char
-charOf = (foldr1 union) . (map char)
-
-number :: Parser Int
-number = pmap digitsToNumber $ many digit
-    where
-        digitsToNumber = foldl1 (\n d -> n * 10 + d)
 
 digit :: Parser Int
 digit (x:xs)
