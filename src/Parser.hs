@@ -36,11 +36,17 @@ end = Parser P.end
 concatenate :: (a -> b -> c) -> Parser a -> Parser b -> Parser c
 concatenate = liftA2
 
+unionH :: Parser a -> Parser b -> Parser (Either a b)
+unionH p q = union (Left <$> p) (Right <$> q)
+
 union :: Parser a -> Parser a -> Parser a
 union = lift2 P.union
 
 unionl :: [Parser a] -> Parser a
 unionl = foldr1 union
+
+fallback :: a -> Parser a -> Parser a
+fallback x p = union p (return x)
 
 many :: Parser a -> Parser [a]
 many p = do

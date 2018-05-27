@@ -41,18 +41,36 @@ varChars = "xyztuvwpqrklsmnijabcdefgho"
 allVars :: [Variable]
 allVars = (map pure) varChars ++ (map (('x' : ) . show) [1..])
 
-
 varParser :: Parser Variable
-varParser = P.spaces *> P.union
-    (P.concatenate (\c n -> c : (show n)) (P.charOf varChars) P.number)
-    (fmap (\c -> [c]) $ P.charOf varChars)
+varParser =
+    do
+        P.spaces
+        x <- P.charOf varChars
+        n <- P.fallback "" $ do
+            num <- P.number
+            return $ show num
+        return $ x : n
 
 expressionParser :: Parser Expression
-expressionParser = P.spaces *> P.unionl
-    [lambdaExprParser, applicationExprParser, varExprParser, bracedExprParser]
+expressionParser = do
+    P.spaces
+
+    term <- P.unionl [
+        lambdaExprParser,
+        applicationExprParser,
+        varExprParser,
+        bracedExprParser]
+
+    P.spaces
+    return term
+
 
 bracedExprParser :: Parser Expression
-bracedExprParser = (P.char '(' *> expressionParser) <* (P.char ')')
+bracedExprParser = do
+    P.char '('
+    term <- expressionParser
+    P.char ')'
+    return term
 
 varExprParser :: Parser Expression
 varExprParser = fmap Variable varParser
@@ -66,7 +84,12 @@ lambdaExprParser =
 applicationExprParser :: Parser Expression
 applicationExprParser = fmap leftAssoc $ P.many other
     where
-        other = P.spaces *> (P.unionl [lambdaExprParser, varExprParser, bracedExprParser])
+        other = do
+            P.spaces
+            term <- P.unionl [lambdaExprParser, varExprParser, bracedExprParser]
+            P.spaces
+            return term
+
         leftAssoc = foldl1 Application
 
 
