@@ -3,12 +3,14 @@ module NamelessLambdasSpec (main, spec) where
 import Test.Hspec
 import NamelessLambdas
 
+import Parser (parse)
+
 main :: IO ()
 main = hspec spec
 
 spec :: Spec
 spec = do
-  describe "parse" $ do
+  describe "parser" $ do
     it "can parse a variable" $ do
       parse "42" `shouldBe` (Just (Variable 42))
     it "can parse a simple application" $ do

@@ -24,8 +24,20 @@ instance Functor Parser where
         x <- p
         return $ f x
 
-parse :: Parser a -> String -> Maybe a
-parse (Parser p) s = P.parse p s
+class Parseable p where
+    parser :: Parser p
+
+parse :: Parseable a => String -> Maybe a
+parse = parseWith (fullParser parser)
+
+parsePrefix :: Parseable a => String -> Maybe a
+parsePrefix = parseWith parser
+
+fullParser :: Parser a -> Parser a
+fullParser p = p <* end
+
+parseWith :: Parser a -> String -> Maybe a
+parseWith (Parser p) s = P.parseWith p s
 
 allResults :: Parser a -> String -> [(a, String)]
 allResults (Parser p) s = P.allResults p s

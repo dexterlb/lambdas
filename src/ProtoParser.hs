@@ -7,8 +7,8 @@ type ParseResult a = [(a, String)]
 
 type Parser a = String -> ParseResult a
 
-parse :: Parser a -> String -> Maybe a
-parse p s = fst <$> (listToMaybe $ p s)
+parseWith :: Parser a -> String -> Maybe a
+parseWith p s = fst <$> (listToMaybe $ p s)
 
 allResults :: Parser a -> String -> [(a, String)]
 allResults p s = p s

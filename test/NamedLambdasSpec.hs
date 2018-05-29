@@ -4,12 +4,14 @@ import Test.Hspec
 import NamedLambdas
 import qualified Data.Set as Set
 
+import Parser (parse)
+
 main :: IO ()
 main = hspec spec
 
 spec :: Spec
 spec = do
-  describe "parse" $ do
+  describe "parser" $ do
     it "can parse a variable" $ do
       parse "x" `shouldBe` (Just (Variable "x"))
     it "can parse a simple application" $ do

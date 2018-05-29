@@ -17,6 +17,9 @@ instance Show Expression where
     show (Application m n)  = "(" ++ (show m) ++ " " ++ (show n) ++ ")"
     show (Lambda m)         = "λ" ++ "" ++ (show m)
 
+instance P.Parseable Expression where
+    parser = expressionParser
+
 varParser :: Parser Variable
 varParser = P.number
 
@@ -65,8 +68,5 @@ applicationExprParser = fmap leftAssoc $ P.many other
 parser :: Parser Expression
 parser = expressionParser <* P.end
 
-parse :: String -> Maybe Expression
-parse = P.parse parser
-
 ul :: String -> Expression
-ul = fromJust . parse
+ul = fromJust . P.parse

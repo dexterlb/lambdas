@@ -14,7 +14,6 @@ data Expression
     | Lambda        Variable    Expression
     deriving (Eq)
 
-
 fvList :: Expression -> [Variable]
 fvList = (Set.elems . fv)
 
@@ -35,6 +34,9 @@ instance Show Expression where
     show (Variable x)       = x
     show (Application m n)  = "(" ++ (show m) ++ " " ++ (show n) ++ ")"
     show (Lambda x m)       = "λ" ++ x ++ "" ++ (show m)
+
+instance P.Parseable Expression where
+    parser = expressionParser
 
 varChars = "xyztuvwpqrklsmnijabcdefgho"
 
@@ -92,12 +94,5 @@ applicationExprParser = fmap leftAssoc $ P.many other
 
         leftAssoc = foldl1 Application
 
-
-parser :: Parser Expression
-parser = expressionParser <* P.end
-
-parse :: String -> Maybe Expression
-parse = P.parse parser
-
 nl :: String -> Expression
-nl = fromJust . parse
+nl = fromJust . P.parse
