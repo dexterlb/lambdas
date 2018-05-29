@@ -93,6 +93,3 @@ applicationExprParser = fmap leftAssoc $ P.many other
             return term
 
         leftAssoc = foldl1 Application
-
-nl :: String -> Expression
-nl = fromJust . P.parse

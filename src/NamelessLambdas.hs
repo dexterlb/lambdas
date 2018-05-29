@@ -67,6 +67,3 @@ applicationExprParser = fmap leftAssoc $ P.many other
 
 parser :: Parser Expression
 parser = expressionParser <* P.end
-
-ul :: String -> Expression
-ul = fromJust . P.parse

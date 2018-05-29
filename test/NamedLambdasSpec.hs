@@ -4,7 +4,7 @@ import Test.Hspec
 import NamedLambdas
 import qualified Data.Set as Set
 
-import Parser (parse)
+import Parser (ps)
 
 main :: IO ()
 main = hspec spec
@@ -13,45 +13,44 @@ spec :: Spec
 spec = do
   describe "parser" $ do
     it "can parse a variable" $ do
-      parse "x" `shouldBe` (Just (Variable "x"))
+      ps "x" `shouldBe` (Variable "x")
     it "can parse a simple application" $ do
-      parse "xy" `shouldBe` (Just (Application (Variable "x") (Variable "y")))
+      ps "xy" `shouldBe` (Application (Variable "x") (Variable "y"))
     it "can parse a simple lambda" $ do
-      parse "lambda x y" `shouldBe` (Just (Lambda "x" (Variable "y")))
+      ps "lambda x y" `shouldBe` (Lambda "x" (Variable "y"))
     it "can parse a greek lambda" $ do
-      parse "λx y" `shouldBe` (Just (Lambda "x" (Variable "y")))
+      ps "λx y" `shouldBe` (Lambda "x" (Variable "y"))
     it "can parse a haskell lambda" $ do
-      parse "\\x y" `shouldBe` (Just (Lambda "x" (Variable "y")))
+      ps "\\x y" `shouldBe` (Lambda "x" (Variable "y"))
     it "can parse a complex expression" $ do
-      parse "lambda x (lambda y (lambda z ((xz) (yz))))"
-        `shouldBe` (Just
+      ps "lambda x (lambda y (lambda z ((xz) (yz))))"
+        `shouldBe`
           (Lambda "x" (Lambda "y" (Lambda "z"
             (Application
               (Application (Variable "x") (Variable "z"))
               (Application (Variable "y") (Variable "z"))
             )
           )))
-        )
+
     it "parses application left-associatively" $ do
-      parse "xyz" `shouldBe` (Just
+      ps "xyz" `shouldBe`
         (Application
           (Application (Variable "x") (Variable "y"))
           (Variable "z")
-        ))
+        )
 
     it "parses application left-associatively twice" $ do
-      parse "x y z t" `shouldBe` (Just
+      ps "x y z t" `shouldBe`
         (Application
           (Application
             (Application
               (Variable "x") (Variable "y"))
               (Variable "z"))
               (Variable "t"))
-        )
   describe "fv" $ do
     it "yields correct free variables for an example term" $ do
-      fv (nl "(lambda z ((lambda x y) z)) z") `shouldBe` Set.fromList ["y", "z"]
+      fv (ps "(lambda z ((lambda x y) z)) z") `shouldBe` Set.fromList ["y", "z"]
 
   describe "bv" $ do
     it "yields correct bound variables for an example term" $ do
-      bv (nl "(lambda z ((lambda x y) z)) z") `shouldBe` Set.fromList ["x", "z"]
+      bv (ps "(lambda z ((lambda x y) z)) z") `shouldBe` Set.fromList ["x", "z"]

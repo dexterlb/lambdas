@@ -2,6 +2,7 @@ module Parser where
 
 import qualified ProtoParser as P
 import Control.Applicative (liftA2)
+import Data.Maybe (fromJust)
 
 data Parser a = Parser (P.Parser a)     -- typeception
 
@@ -26,6 +27,9 @@ instance Functor Parser where
 
 class Parseable p where
     parser :: Parser p
+
+ps :: Parseable a => String -> a
+ps = fromJust . parse
 
 parse :: Parseable a => String -> Maybe a
 parse = parseWith (fullParser parser)
