@@ -13,6 +13,11 @@ import Control.Applicative (liftA2)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as H
 import Control.Monad (liftM2)
+import Data.Maybe (fromJust)
+import Data.Set (Set)
+import qualified Data.Set as Set
+
+import Debug.Trace
 
 type Cache = HashMap Identifier UL.Expression
 
@@ -27,10 +32,50 @@ instance Show Declaration where
 instance P.Parseable Declaration where
     parser = fparser Declaration NL.varParser
 
+data Definition = Definition Declaration Expression
+
+instance Show Definition where
+    show (Definition declaration body) = (show declaration) ++ " := " ++ (show body)
+
+instance P.Parseable Definition where
+    parser = do
+        declaration <- P.parser
+        P.spaces
+        P.string ":="
+        P.spaces
+        body <- P.parser
+
+        return $ Definition declaration body
+
+makeDefinition :: Identifier -> UL.Expression -> Definition
+makeDefinition f term = Definition declaration body
+    where
+        declaration = Declaration f vars
+        vars = fvList body
+        body = fromJust $ fromNamed <$> name NL.allVars term
+
 identifierParser = do
     fh <- P.charOf "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     ft <- P.manyOrNone $ P.charOf "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890_"
     return $ fh : ft
+
+define :: Definition -> Cache -> Maybe Cache
+define d c = do
+    let (Definition (Declaration f vars) body) = d
+    term <- apply d c
+    return $  H.insert f term c
+
+apply :: Definition -> Cache -> Maybe UL.Expression
+apply (Definition (Declaration f vars) body) cache = toUnnamed vars cache body
+
+fvList :: Expression -> [NL.Variable]
+fvList = (Set.elems . fv)
+
+fv :: Expression -> Set NL.Variable
+fv (Variable x) = Set.singleton x
+fv (Application m n) = Set.union (fv m) (fv n)
+
+fv (Call _ terms) = foldr Set.union Set.empty (map fv terms)
 
 fparser :: (Identifier -> [a] -> b) -> Parser a -> Parser b
 fparser constructor item = do
@@ -149,3 +194,9 @@ applicationExprParser = fmap leftAssoc $ P.many other
 
 callExprParser :: Parser Expression
 callExprParser = fparser Call P.parser
+
+showCache :: Cache -> String
+showCache c =
+    "\n--------\n" ++
+    (intercalate "\n" $ map (show . (uncurry makeDefinition)) $ H.toList $ c)
+    ++ "\n--------\n"
