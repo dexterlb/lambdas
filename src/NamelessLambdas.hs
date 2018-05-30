@@ -3,6 +3,8 @@ module NamelessLambdas where
 import qualified Parser as P
 import Parser (Parser)
 import Data.Maybe (fromJust)
+import Data.Set (Set)
+import qualified Data.Set as Set
 
 type Variable = Int
 
@@ -19,6 +21,14 @@ instance Show Expression where
 
 instance P.Parseable Expression where
     parser = expressionParser
+
+numFV :: Expression -> Int
+numFV = Set.size . fv
+
+fv :: Expression -> Set Variable
+fv (Variable x) = Set.singleton x
+fv (Application m n) = Set.union (fv m) (fv n)
+fv (Lambda m) = Set.map (\x -> x - 1) (Set.delete 0 $ fv m)
 
 varParser :: Parser Variable
 varParser = P.number
