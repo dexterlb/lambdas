@@ -66,6 +66,10 @@ expressionParser = do
     P.spaces
     return term
 
+stupidParser :: Parser Char
+stupidParser = P.union
+    ((P.char ',') *> stupidParser)
+    (P.char 'щ')
 
 bracedExprParser :: Parser Expression
 bracedExprParser = do

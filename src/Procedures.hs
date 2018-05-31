@@ -45,14 +45,14 @@ instance P.Parseable Definition where
         P.spaces
         body <- P.parser
 
-        return $ Definition declaration body
+        return $! Definition declaration body
 
 makeDefinition :: Identifier -> UL.Expression -> Definition
 makeDefinition f term = Definition declaration body
     where
-        declaration = Declaration f vars
         vars = fvList body
-        body = fromJust $ fromNamed <$> name NL.allVars term
+        declaration = Declaration f vars
+        body = fromJust $ fromNamed <$> name (take (UL.numFV term) NL.allVars) term
 
 identifierParser = do
     fh <- P.charOf "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -63,7 +63,7 @@ define :: Definition -> Cache -> Maybe Cache
 define d c = do
     let (Definition (Declaration f vars) body) = d
     term <- apply d c
-    return $  H.insert f term c
+    return $!  H.insert f term c
 
 apply :: Definition -> Cache -> Maybe UL.Expression
 apply (Definition (Declaration f vars) body) cache = toUnnamed vars cache body
@@ -72,10 +72,10 @@ fvList :: Expression -> [NL.Variable]
 fvList = (Set.elems . fv)
 
 fv :: Expression -> Set NL.Variable
-fv (Variable x) = Set.singleton x
+fv (Variable x)      = Set.singleton x
 fv (Application m n) = Set.union (fv m) (fv n)
-
-fv (Call _ terms) = foldr Set.union Set.empty (map fv terms)
+fv (Lambda x m)      = Set.delete x (fv m)
+fv (Call _ terms)    = foldr Set.union Set.empty (map fv terms)
 
 fparser :: (Identifier -> [a] -> b) -> Parser a -> Parser b
 fparser constructor item = do
