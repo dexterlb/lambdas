@@ -4,7 +4,7 @@ import qualified ProtoParser as P
 import Control.Applicative (liftA2)
 import Data.Maybe (fromJust)
 
-data Parser a = Parser (P.Parser a)     -- typeception
+newtype Parser a = Parser (P.Parser a)     -- typeception
 
 -- instances on type aliases would have made life a whole lot easier
 
@@ -56,7 +56,7 @@ unionH :: Parser a -> Parser b -> Parser (Either a b)
 unionH p q = union (Left <$> p) (Right <$> q)
 
 union :: Parser a -> Parser a -> Parser a
-union = lift2 P.union
+union (Parser p) (Parser q) = Parser $ P.union p q
 
 unionl :: [Parser a] -> Parser a
 unionl = foldr1 union
@@ -100,11 +100,8 @@ digit = Parser P.digit
 
 -- functions for bridging between Parser and ProtoParser:
 
-lift :: (P.Parser a -> P.Parser b) -> Parser a -> Parser b
-lift f p = Parser (f (extract p))
-
 lift2 :: (P.Parser a -> P.Parser b -> P.Parser c) -> Parser a -> Parser b -> Parser c
-lift2 f p q = Parser $ f (extract p) (extract q)
+lift2 f (Parser p) (Parser q) = Parser $ f p q
 
 dropF :: (a -> Parser b) -> (a -> P.Parser b)
 dropF f x = extract $ f x
