@@ -1,5 +1,6 @@
 module Maths where
 
+
 data ProcessResult = Ok | GiveUp deriving (Show, Eq)
 
 limitedFixedPoint :: (Eq a) => (a -> a) -> Int -> a -> (a, ProcessResult)

@@ -2,16 +2,27 @@ module Main where
 
 import Procedures
 import Lambdas
+import Maths
 import qualified Parser as P
 import qualified Data.HashMap.Strict as H
+
+import qualified NamedLambdas as NL
+import qualified NamelessLambdas as UL
+
+import Data.Maybe (fromJust)
 
 import Debug.Trace
 
 data State = State
     { procedures :: Cache
+    , reductionLimit :: Int
     }
 
-data Command = Define Definition | List
+data Command
+    = Define Definition
+    | List
+    | See Expression
+    | Do Expression
 
 instance P.Parseable Command where
     parser = do
@@ -19,6 +30,8 @@ instance P.Parseable Command where
         cmd <- P.unionl
             [ defineParser
             , listParser
+            , seeParser
+            , doParser
             ]
         P.spaces
         return cmd
@@ -27,23 +40,59 @@ defineParser :: P.Parser Command
 defineParser = do
     P.string "define"
     P.spaces
-    command <- Define <$> P.parser
-    return command
+    definition <- P.parser
+    return $ Define definition
 
 listParser :: P.Parser Command
 listParser = do
     P.string "list"
     return List
 
+seeParser :: P.Parser Command
+seeParser = do
+    P.string "see"
+    P.spaces
+    term <- P.parser
+    return $ See term
+
+doParser :: P.Parser Command
+doParser = do
+    P.string "do"
+    P.spaces
+    term <- P.parser
+    return $ Do term
+
 initialState :: State
-initialState = State { procedures = H.empty }
+initialState = State
+    { procedures = H.empty
+    , reductionLimit = 1000
+    }
 
 processCommand :: Command -> State -> (State, String)
 processCommand List s = (s, showCache (procedures s))
 processCommand (Define def) s
-    | (Just pr) <- result = (State { procedures = pr }, "ok")
+    | (Just pr) <- result = (s { procedures = pr }, "ok")
     | otherwise = (s, "fail")
     where result = define def (procedures s)
+processCommand (See term) s
+    | (Just namedTerm) <- result = (s, show namedTerm)
+    | otherwise                  = (s, "replace error")
+    where
+        result = name vars =<< toUnnamed vars (procedures s) term
+        vars = fvList term
+processCommand (Do term) s
+    | (Just (namedTerm, Ok)) <- result      = (s, show namedTerm)
+    | (Just (namedTerm, GiveUp)) <- result  = (s, "[gave up] " ++ (show namedTerm))
+    | otherwise                             = (s, "replace error")
+    where
+        result = do
+            term <- toUnnamed vars (procedures s) term
+            let (reduced, finished) = reduceUntil (reductionLimit s) term
+            namedTerm <- name vars reduced
+            return (namedTerm, finished)
+        vars = fvList term
+
+
 
 prompt :: (State, String) -> (State, String)
 prompt (state, s)

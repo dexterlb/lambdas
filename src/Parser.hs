@@ -100,9 +100,6 @@ digit = Parser P.digit
 
 -- functions for bridging between Parser and ProtoParser:
 
-lift2 :: (P.Parser a -> P.Parser b -> P.Parser c) -> Parser a -> Parser b -> Parser c
-lift2 f (Parser p) (Parser q) = Parser $ f p q
-
 dropF :: (a -> Parser b) -> (a -> P.Parser b)
 dropF f x = extract $ f x
 
