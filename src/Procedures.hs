@@ -83,6 +83,7 @@ fv (Variable x)      = Set.singleton x
 fv (Application m n) = Set.union (fv m) (fv n)
 fv (Lambda x m)      = Set.delete x (fv m)
 fv (Call _ terms)    = foldr Set.union Set.empty (map fv terms)
+fv (ChurchNumeral _) = Set.empty
 
 fparser :: (Identifier -> [a] -> b) -> Parser a -> Parser b
 fparser constructor item = do
@@ -122,6 +123,7 @@ data Expression
     | Application   Expression  Expression
     | Lambda        NL.Variable Expression
     | Call          Identifier  [Expression]
+    | ChurchNumeral Int
     deriving (Eq)
 
 instance Show Expression where
@@ -130,6 +132,7 @@ instance Show Expression where
     show (Lambda x m)       = "λ" ++ x ++ "" ++ (show m)
     show (Call f [])        = f
     show (Call f terms)     = f ++ "(" ++ (intercalate ", " (map show terms)) ++ ")"
+    show (ChurchNumeral n)  = "#" ++ (show n)
 
 instance P.Parseable Expression where
     parser = expressionParser
@@ -156,10 +159,14 @@ toUnnamed c ch (Call f terms)       = replaceCall (mapM (toUnnamed c ch) terms) 
         replaceCall' i (x:xs) expr = replaceCall' (i + 1) xs expr'
             where
                 expr' = substitute expr i x
+toUnnamed c _ (ChurchNumeral n) = Just $ UL.Lambda $ UL.Lambda (fs (UL.Variable 0))
+    where
+        fs = foldr (.) id (replicate n (UL.Application $ UL.Variable 1))
 
 fromUnnamed :: Cache -> Context -> UL.Expression -> Maybe Expression
 fromUnnamed h c e
-    | (Just f) <- C.getBackward e h = Just $ Call f []
+    | (Just f) <- C.getBackward e h     = Just $ Call f []
+    | (Just n) <- decodeChurchNumeral e = Just $ ChurchNumeral n
     | otherwise = fromNamed <$> (name c e)
 
 expressionParser :: Parser Expression
@@ -171,6 +178,7 @@ expressionParser = do
         applicationExprParser,
         varExprParser,
         callExprParser,
+        churchNumeralExprParser,
         bracedExprParser]
 
     P.spaces
@@ -206,6 +214,17 @@ applicationExprParser = fmap leftAssoc $ P.many other
 
 callExprParser :: Parser Expression
 callExprParser = fparser Call P.parser
+
+churchNumeralExprParser :: Parser Expression
+churchNumeralExprParser = P.char '#' *> (ChurchNumeral <$> P.number)
+
+decodeChurchNumeral :: UL.Expression -> Maybe Int
+decodeChurchNumeral (UL.Lambda (UL.Lambda f)) = decodeApplication f
+    where
+        decodeApplication (UL.Variable 0) = Just 0
+        decodeApplication (UL.Application (UL.Variable 1) rest) = (1 +) <$> decodeApplication rest
+        decodeApplication _ = Nothing
+decodeChurchNumeral _ = Nothing
 
 showCache :: Cache -> String
 showCache c =
