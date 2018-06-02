@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveGeneric #-}
+
 module NamelessLambdas where
 
 import qualified Parser as P
@@ -5,6 +7,8 @@ import Parser (Parser)
 import Data.Maybe (fromJust)
 import Data.Set (Set)
 import qualified Data.Set as Set
+import Data.Hashable
+import GHC.Generics (Generic)
 
 type Variable = Int
 
@@ -12,7 +16,9 @@ data Expression
     = Variable      Int
     | Application   Expression  Expression
     | Lambda        Expression
-    deriving (Eq)
+    deriving (Eq, Generic)
+
+instance Hashable Expression
 
 instance Show Expression where
     show (Variable x)       = show x

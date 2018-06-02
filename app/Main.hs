@@ -9,7 +9,11 @@ import qualified Data.HashMap.Strict as H
 import qualified NamedLambdas as NL
 import qualified NamelessLambdas as UL
 
+import Cache (Cache)
+import qualified Cache as C
+
 import Data.Maybe (fromJust)
+import Data.List (intercalate)
 
 import Debug.Trace
 
@@ -64,22 +68,27 @@ doParser = do
 
 initialState :: State
 initialState = State
-    { procedures = H.empty
+    { procedures = C.empty
     , reductionLimit = 1000
     }
 
 processCommand :: Command -> State -> (State, String)
+
 processCommand List s = (s, showCache (procedures s))
+
 processCommand (Define def) s
-    | (Just pr) <- result = (s { procedures = pr }, "ok")
+    | (Just (pr, Ok))       <- result = (s { procedures = pr }, "ok")
+    | (Just (pr, GiveUp))   <- result = (s { procedures = pr }, "ok, but gave up on reduction")
     | otherwise = (s, "fail")
-    where result = define def (procedures s)
+    where result = defineReduce (reductionLimit s) def (procedures s)
+
 processCommand (See term) s
     | (Just namedTerm) <- result = (s, show namedTerm)
     | otherwise                  = (s, "replace error")
     where
         result = name vars =<< toUnnamed vars (procedures s) term
         vars = fvList term
+
 processCommand (Do term) s
     | (Just (namedTerm, Ok)) <- result      = (s, show namedTerm)
     | (Just (namedTerm, GiveUp)) <- result  = (s, "[gave up] " ++ (show namedTerm))
@@ -88,7 +97,7 @@ processCommand (Do term) s
         result = do
             term <- toUnnamed vars (procedures s) term
             let (reduced, finished) = reduceUntil (reductionLimit s) term
-            namedTerm <- name vars reduced
+            namedTerm <- fromUnnamed (procedures s) vars reduced
             return (namedTerm, finished)
         vars = fvList term
 

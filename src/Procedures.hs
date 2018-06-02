@@ -6,28 +6,27 @@ module Procedures where
 import qualified NamedLambdas as NL
 import qualified NamelessLambdas as UL
 import Lambdas
+import Maths
 import Data.List (intercalate)
 import qualified Parser as P
 import Parser (Parser)
 import Control.Applicative (liftA2)
-import Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as H
 import Control.Monad (liftM2)
 import Data.Maybe (fromJust)
 import Data.Set (Set)
 import qualified Data.Set as Set
+import Cache (Cache, Identifier)
+import qualified Cache as C
 
 import Debug.Trace
 
-type Cache = HashMap Identifier UL.Expression
-
-type Identifier = String
 type Arity = Int
 
 data Declaration = Declaration String Context deriving (Eq)
 
 instance Show Declaration where
-    show (Declaration f vars) = f ++ "(" ++ (intercalate ", " vars) ++ ")"
+    show (Declaration f [])     = f
+    show (Declaration f vars)   = f ++ "(" ++ (intercalate ", " vars) ++ ")"
 
 instance P.Parseable Declaration where
     parser = fparser Declaration NL.varParser
@@ -63,7 +62,15 @@ define :: Definition -> Cache -> Maybe Cache
 define d c = do
     let (Definition (Declaration f vars) body) = d
     term <- apply d c
-    return $!  H.insert f term c
+    return $ C.put f term c
+
+defineReduce :: Int -> Definition -> Cache -> Maybe (Cache, ProcessResult)
+defineReduce n d c = do
+    let (Definition (Declaration f vars) body) = d
+    term <- apply d c
+    let (reducedTerm, result) = reduceUntil n term
+    return $ (C.put f reducedTerm c, result)
+
 
 apply :: Definition -> Cache -> Maybe UL.Expression
 apply (Definition (Declaration f vars) body) cache = toUnnamed vars cache body
@@ -121,6 +128,7 @@ instance Show Expression where
     show (Variable x)       = x
     show (Application m n)  = "(" ++ (show m) ++ " " ++ (show n) ++ ")"
     show (Lambda x m)       = "λ" ++ x ++ "" ++ (show m)
+    show (Call f [])        = f
     show (Call f terms)     = f ++ "(" ++ (intercalate ", " (map show terms)) ++ ")"
 
 instance P.Parseable Expression where
@@ -135,7 +143,7 @@ toUnnamed :: Context -> Cache -> Expression -> Maybe UL.Expression
 toUnnamed c _  (Variable x)         =        UL.Variable <$> index c x
 toUnnamed c ch (Application m n)    = liftM2 UL.Application  (toUnnamed c ch m) (toUnnamed c ch n)
 toUnnamed c ch (Lambda x m)         =        UL.Lambda   <$> toUnnamed (push x c) ch m
-toUnnamed c ch (Call f terms)       = replaceCall (mapM (toUnnamed c ch) terms) =<< H.lookup f ch
+toUnnamed c ch (Call f terms)       = replaceCall (mapM (toUnnamed c ch) terms) =<< C.get f ch
     where
         replaceCall :: Maybe [UL.Expression] -> UL.Expression -> Maybe UL.Expression
         replaceCall (Just unnamedTerms) expr
@@ -149,6 +157,10 @@ toUnnamed c ch (Call f terms)       = replaceCall (mapM (toUnnamed c ch) terms) 
             where
                 expr' = substitute expr i x
 
+fromUnnamed :: Cache -> Context -> UL.Expression -> Maybe Expression
+fromUnnamed h c e
+    | (Just f) <- C.getBackward e h = Just $ Call f []
+    | otherwise = fromNamed <$> (name c e)
 
 expressionParser :: Parser Expression
 expressionParser = do
@@ -198,5 +210,5 @@ callExprParser = fparser Call P.parser
 showCache :: Cache -> String
 showCache c =
     "\n--------\n" ++
-    (intercalate "\n" $ map (show . (uncurry makeDefinition)) $ H.toList $ c)
+    (intercalate "\n" $ map (show . (uncurry makeDefinition)) $ C.toList $ c)
     ++ "\n--------\n"
