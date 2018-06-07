@@ -174,11 +174,11 @@ expressionParser = do
     P.spaces
 
     term <- P.unionl [
+        churchNumeralExprParser,
         lambdaExprParser,
         applicationExprParser,
         varExprParser,
         callExprParser,
-        churchNumeralExprParser,
         bracedExprParser]
 
     P.spaces
@@ -206,7 +206,13 @@ applicationExprParser = fmap leftAssoc $ P.many other
     where
         other = do
             P.spaces
-            term <- P.unionl [lambdaExprParser, varExprParser, callExprParser, bracedExprParser]
+            term <- P.unionl
+                [ churchNumeralExprParser
+                , lambdaExprParser
+                , varExprParser
+                , callExprParser
+                , bracedExprParser
+                ]
             P.spaces
             return term
 
