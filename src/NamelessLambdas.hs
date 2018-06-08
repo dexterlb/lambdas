@@ -12,26 +12,26 @@ import GHC.Generics (Generic)
 
 type Variable = Int
 
-data Expression
+data Term
     = Variable      Int
-    | Application   Expression  Expression
-    | Lambda        Expression
+    | Application   Term  Term
+    | Lambda        Term
     deriving (Eq, Generic)
 
-instance Hashable Expression
+instance Hashable Term
 
-instance Show Expression where
+instance Show Term where
     show (Variable x)       = show x
     show (Application m n)  = "(" ++ (show m) ++ " " ++ (show n) ++ ")"
     show (Lambda m)         = "λ" ++ "" ++ (show m)
 
-instance P.Parseable Expression where
-    parser = expressionParser
+instance P.Parseable Term where
+    parser = termParser
 
-numFV :: Expression -> Int
+numFV :: Term -> Int
 numFV = Set.size . fv
 
-fv :: Expression -> Set Variable
+fv :: Term -> Set Variable
 fv (Variable x) = Set.singleton x
 fv (Application m n) = Set.union (fv m) (fv n)
 fv (Lambda m) = Set.map (\x -> x - 1) (Set.delete 0 $ fv m)
@@ -39,47 +39,47 @@ fv (Lambda m) = Set.map (\x -> x - 1) (Set.delete 0 $ fv m)
 varParser :: Parser Variable
 varParser = P.number
 
-expressionParser :: Parser Expression
-expressionParser = do
+termParser :: Parser Term
+termParser = do
     P.spaces
 
     term <- P.unionl [
-        lambdaExprParser,
-        applicationExprParser,
-        varExprParser,
-        bracedExprParser]
+        lambdaTermParser,
+        applicationTermParser,
+        varTermParser,
+        bracedTermParser]
 
     P.spaces
     return term
 
 
-bracedExprParser :: Parser Expression
-bracedExprParser = do
+bracedTermParser :: Parser Term
+bracedTermParser = do
     P.char '('
-    term <- expressionParser
+    term <- termParser
     P.char ')'
     return term
 
-varExprParser :: Parser Expression
-varExprParser = fmap Variable varParser
+varTermParser :: Parser Term
+varTermParser = fmap Variable varParser
 
-lambdaExprParser :: Parser Expression
-lambdaExprParser =
+lambdaTermParser :: Parser Term
+lambdaTermParser =
     (P.unionl [P.string "lambda", P.string "\\", P.string "λ"])
     *>
-    (Lambda <$> expressionParser)
+    (Lambda <$> termParser)
 
-applicationExprParser :: Parser Expression
-applicationExprParser = fmap leftAssoc $ P.many other
+applicationTermParser :: Parser Term
+applicationTermParser = fmap leftAssoc $ P.many other
     where
         other = do
             P.spaces
-            term <- P.unionl [lambdaExprParser, varExprParser, bracedExprParser]
+            term <- P.unionl [lambdaTermParser, varTermParser, bracedTermParser]
             P.spaces
             return term
 
         leftAssoc = foldl1 Application
 
 
-parser :: Parser Expression
-parser = expressionParser <* P.end
+parser :: Parser Term
+parser = termParser <* P.end

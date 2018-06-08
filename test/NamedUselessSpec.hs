@@ -12,10 +12,10 @@ main = hspec spec
 spec :: Spec
 spec = do
   describe "bvrename" $ do
-    it "can rename direct bound expression" $ do
+    it "can rename direct bound term" $ do
       bvrename (ps "lambda x (xy)") "x" "z" `shouldBe` (ps "lambda z (zy)")
 
-    it "can rename direct unbound expression" $ do
+    it "can rename direct unbound term" $ do
       bvrename (ps "lambda x (xy)") "y" "z" `shouldBe` (ps "lambda x (xy)")
 
     it "can rename variable in both bound and unbound contexts" $ do

@@ -23,7 +23,7 @@ spec = do
       ps "λ 42" `shouldBe` (Lambda (Variable 42))
     it "can parse a haskell lambda" $ do
       ps "\\ 42" `shouldBe` (Lambda (Variable 42))
-    it "can parse a complex expression" $ do
+    it "can parse a complex term" $ do
       ps "lambda (lambda (lambda ((2 0) (1 0))))"
         `shouldBe`
           (Lambda (Lambda (Lambda

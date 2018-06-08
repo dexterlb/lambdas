@@ -25,7 +25,7 @@ spec = do
     it "can work on variable in lambda" $ do
       unname [] (ps "lambda y y") `shouldBe` (Just $ ps "lambda 0")
       name   [] (ps "lambda 0")   `shouldBe` (Just $ ps "lambda x x")
-    it "can work on complex lambda expression" $ do
+    it "can work on complex lambda term" $ do
 
       (unname [] (ps "lambda x (x (lambda z (z (lambda y (xyz)) x)))")
         `shouldBe`

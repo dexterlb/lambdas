@@ -8,35 +8,35 @@ import qualified Data.Set as Set
 
 type Variable = String
 
-data Expression
+data Term
     = Variable      Variable
-    | Application   Expression  Expression
-    | Lambda        Variable    Expression
+    | Application   Term  Term
+    | Lambda        Variable    Term
     deriving (Eq)
 
-fvList :: Expression -> [Variable]
+fvList :: Term -> [Variable]
 fvList = (Set.elems . fv)
 
-fv :: Expression -> Set Variable
+fv :: Term -> Set Variable
 fv (Variable x) = Set.singleton x
 fv (Application m n) = Set.union (fv m) (fv n)
 fv (Lambda x m) = Set.delete x (fv m)
 
-bvList :: Expression -> [Variable]
+bvList :: Term -> [Variable]
 bvList = (Set.elems . bv)
 
-bv :: Expression -> Set Variable
+bv :: Term -> Set Variable
 bv (Variable x) = Set.empty
 bv (Application m n) = Set.union (bv m) (bv n)
 bv (Lambda x m) = Set.insert x (bv m)
 
-instance Show Expression where
+instance Show Term where
     show (Variable x)       = x
     show (Application m n)  = "(" ++ (show m) ++ " " ++ (show n) ++ ")"
     show (Lambda x m)       = "λ" ++ x ++ "" ++ (show m)
 
-instance P.Parseable Expression where
-    parser = expressionParser
+instance P.Parseable Term where
+    parser = termParser
 
 varChars = "xyztuvwpqrklsmnijabcdefgho"
 
@@ -53,15 +53,15 @@ varParser =
             return $ show num
         return $ x : n
 
-expressionParser :: Parser Expression
-expressionParser = do
+termParser :: Parser Term
+termParser = do
     P.spaces
 
     term <- P.unionl [
-        lambdaExprParser,
-        applicationExprParser,
-        varExprParser,
-        bracedExprParser]
+        lambdaTermParser,
+        applicationTermParser,
+        varTermParser,
+        bracedTermParser]
 
     P.spaces
     return term
@@ -71,28 +71,28 @@ stupidParser = P.union
     ((P.char ',') *> stupidParser)
     (P.char 'щ')
 
-bracedExprParser :: Parser Expression
-bracedExprParser = do
+bracedTermParser :: Parser Term
+bracedTermParser = do
     P.char '('
-    term <- expressionParser
+    term <- termParser
     P.char ')'
     return term
 
-varExprParser :: Parser Expression
-varExprParser = fmap Variable varParser
+varTermParser :: Parser Term
+varTermParser = fmap Variable varParser
 
-lambdaExprParser :: Parser Expression
-lambdaExprParser =
+lambdaTermParser :: Parser Term
+lambdaTermParser =
     (P.unionl [P.string "lambda", P.string "\\", P.string "λ"])
     *>
-    (P.concatenate Lambda varParser expressionParser)
+    (P.concatenate Lambda varParser termParser)
 
-applicationExprParser :: Parser Expression
-applicationExprParser = fmap leftAssoc $ P.many other
+applicationTermParser :: Parser Term
+applicationTermParser = fmap leftAssoc $ P.many other
     where
         other = do
             P.spaces
-            term <- P.unionl [lambdaExprParser, varExprParser, bracedExprParser]
+            term <- P.unionl [lambdaTermParser, varTermParser, bracedTermParser]
             P.spaces
             return term
 

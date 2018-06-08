@@ -2,7 +2,7 @@ module NamedUseless where
 
 import NamedLambdas
 
-substitute :: Expression -> Variable -> Expression -> Expression
+substitute :: Term -> Variable -> Term -> Term
 substitute (Variable x) y n
     | x == y    = n
     | otherwise = Variable x
@@ -16,17 +16,17 @@ substitute (Lambda x m) t to
         v = head $ filter (not . isBad) (allVars)
         isBad z = z `inFV` to || z `inAV` m
 
-bvrename :: Expression -> Variable -> Variable -> Expression
+bvrename :: Term -> Variable -> Variable -> Term
 bvrename (Variable x) _ _ = (Variable x)
 bvrename (Application m n) x y = Application (bvrename m x y) (bvrename n x y)
 bvrename (Lambda z m) x y
     | z == x    = (Lambda y (substitute (bvrename m x y) x (Variable y)))
     | otherwise = (Lambda z (bvrename m x y))
 
-inAV :: Variable -> Expression -> Bool
+inAV :: Variable -> Term -> Bool
 inAV x p = inFV x p || inBV x p
 
-inFV :: Variable -> Expression -> Bool
+inFV :: Variable -> Term -> Bool
 inFV x (Variable z)
     | x == z    = True
     | otherwise = False
@@ -35,7 +35,7 @@ inFV x (Lambda y m)
     | x == y    = False
     | otherwise = inFV x m
 
-inBV :: Variable -> Expression -> Bool
+inBV :: Variable -> Term -> Bool
 inBV x (Variable _) = False
 inBV x (Application m n) = inBV x m || inBV x n
 inBV x (Lambda y m)

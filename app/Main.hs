@@ -25,8 +25,8 @@ data State = State
 data Command
     = Define Definition
     | List
-    | See Expression
-    | Do Expression
+    | See Term
+    | Do Term
 
 instance P.Parseable Command where
     parser = do
