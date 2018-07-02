@@ -21,6 +21,9 @@ spec = do
     it "can rename variable in both bound and unbound contexts" $ do
       bvrename (ps "x (lambda x (xy))") "x" "z" `shouldBe` (ps "x (lambda z (zy))")
 
+    it "works on Zvezdi's example" $ do
+      bvrename (ps "λz λy zy") "y" "z" `shouldBe` (ps "λx λz xz")
+
   describe "substitute" $ do
     it "can substitute on the example from the PDF" $ do
       substitute (ps "y (lambda x (xyz)) z") "y" (ps "zy")

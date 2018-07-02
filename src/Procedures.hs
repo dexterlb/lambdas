@@ -26,7 +26,7 @@ data Declaration = Declaration String Context deriving (Eq)
 
 instance Show Declaration where
     show (Declaration f [])     = f
-    show (Declaration f vars)   = f ++ "(" ++ (intercalate ", " vars) ++ ")"
+    show (Declaration f vars)   = f ++ "[" ++ (intercalate ", " vars) ++ "]"
 
 instance P.Parseable Declaration where
     parser = fparser Declaration NL.varParser
@@ -92,10 +92,10 @@ fparser constructor item = do
 
     vars <- P.fallback [] $ do
         P.spaces
-        P.char '('
+        P.char '['
         P.spaces
         vars <- commaParser item
-        P.char ')'
+        P.char ']'
         return vars
 
     return $ constructor f vars
@@ -131,7 +131,7 @@ instance Show Term where
     show (Application m n)  = "(" ++ (show m) ++ " " ++ (show n) ++ ")"
     show (Lambda x m)       = "λ" ++ x ++ "" ++ (show m)
     show (Call f [])        = f
-    show (Call f terms)     = f ++ "(" ++ (intercalate ", " (map show terms)) ++ ")"
+    show (Call f terms)     = f ++ "[" ++ (intercalate ", " (map show terms)) ++ "]"
     show (ChurchNumeral n)  = "#" ++ (show n)
 
 instance P.Parseable Term where
